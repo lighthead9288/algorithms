@@ -27,29 +27,34 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
- // List<double> list = [1,2,3,4,5,6,7,8,9,10];
-//  List<double> list = List.generate(100, (index) => index.toDouble());
   List<ArrayItem> list = List.generate(10, (index) => ArrayItem(value: double.parse(Random().nextDouble().toStringAsFixed(3)), index: index));
 
   BubbleSortItemState? state = BubbleSortItemState(state: BubbleSortState.None);
 
   List<AnimationController> _switchAnimationControllers = [];
-  List<Tween<ArrayItem>> _switchTweens = [];
-  List<Animation<ArrayItem>> _switchAnimations = [];
+  List<Tween<Offset>> _switchTweens = [];
+  List<Animation<Offset>> _switchAnimations = [];
 
-  // @override
-  // void initState() {
-  //   for(var item in list) {
-  //     _switchAnimationControllers.add(AnimationController(vsync: this, duration: const Duration(milliseconds: 500)));
-  //     _switchTweens.add(Tween<ArrayItem>(begin: item, end: item));
-  //     _switchAnimations.add(_switchTweens[item.index].animate(_switchAnimationControllers[item.index]));
-  //   }
+  late double _deviceHeight;
+  late double _deviceWidth;
 
-  //   super.initState();
-  // }
+  final Duration _duration = const Duration(milliseconds: 300);
+  
+  @override
+  void initState() {
+    for(var item in list) {
+      _switchAnimationControllers.add(AnimationController(vsync: this, duration: _duration, reverseDuration: const Duration(seconds: 0)));
+      _switchTweens.add(Tween<Offset>(begin: Offset.zero, end: Offset.zero));
+      _switchAnimations.add(_switchTweens[item.index].animate(_switchAnimationControllers[item.index]));
+    }
+
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
+    _deviceHeight = MediaQuery.of(context).size.height;
+    _deviceWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       appBar: AppBar(title: const Text('Algorithms')),
       body: Center(
@@ -62,11 +67,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             padding: const EdgeInsets.all(20),
             shrinkWrap: true,
             children: list.map((item) => 
-            // AnimatedBuilder(
-            //   animation: _switchAnimationControllers[item.index],
-            //   builder: (_, __) => 
-              
-              Container(
+            SlideTransition(
+              position: _switchAnimations[item.index], 
+              child: Container(
                   decoration: BoxDecoration(
                   //  color: Colors.red,
                     border: Border.all(
@@ -101,22 +104,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     ],
                   ),
                 ),
-             // child: ,
-           // ),
+              ),
             ).toList(),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          list = await _bubbleSort(list);
+          list = await _bubbleSort(list, _duration);
         },
         child: const Icon(Icons.sort),
       ),
     );
   }
 
-  Future<List<ArrayItem>> _bubbleSort(List<ArrayItem> list) async {
+  Future<List<ArrayItem>> _bubbleSort(List<ArrayItem> list, Duration duration) async {
     for(int i = 0; i < list.length - 1; i++) {
       var isNormalOrder = true;
       for(int j = 0; j < list.length - 1; j++) {
@@ -125,7 +127,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           setState(() {
             state = BubbleSortItemState(state: BubbleSortState.Swap, index: j);
           });
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(duration);
+
+          await _onSwap(j, duration);       
+
           var tmp = list[j].value;
           list[j].value = list[j+1].value;
           list[j+1].value = tmp;
@@ -134,14 +139,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           setState(() {
             state = BubbleSortItemState(state: BubbleSortState.Swap, index: j);
           });
-        //  _onSwap(list[j+1], list[j]);         
-
-          await Future.delayed(const Duration(seconds: 1));
+          
         } else {
           setState(() {
             state = BubbleSortItemState(state: BubbleSortState.Normal, index: j);
           });
-          await Future.delayed(const Duration(seconds: 1));
+          await Future.delayed(duration);
         } 
       }
       if (isNormalOrder) break;
@@ -152,13 +155,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     return list;
   }
 
-  // void _onSwap(ArrayItem left, ArrayItem right) {
-  //   _switchTweens[left.index].end = right;
-  //   _switchAnimationControllers[left.index].forward();
+  Future<void> _onSwap(int j, Duration duration) async {
+    Offset offsetForLeft = ((j + 1) % 5 == 0) ? Offset(-4.6, 1.15) : Offset(1.15, 0) ;
+    Offset offsetForRight = ((j + 1) % 5 == 0) ? Offset(4.6, -1.15) : Offset(-1.15, 0);
+    
+    _switchTweens[j].end = offsetForLeft;
+    _switchAnimationControllers[j].forward();
 
-  //   _switchTweens[right.index].end = left;
-  //   _switchAnimationControllers[right.index].forward();
-  // }
+    _switchTweens[j + 1].end = offsetForRight;
+    _switchAnimationControllers[j + 1].forward();
+
+    await Future.delayed(duration);
+
+    _switchAnimationControllers[j].reverse();
+    _switchAnimationControllers[j + 1].reverse();    
+  }
 }
 
 class ArrayItem {
@@ -178,71 +189,3 @@ class BubbleSortItemState {
 enum BubbleSortState {
   None, Normal, Swap
 }
-
-
-// import 'package:flutter/material.dart';
-// import 'package:flutter_reorderable_grid_view/entities/order_update_entity.dart';
-// import 'package:flutter_reorderable_grid_view/widgets/widgets.dart';
-
-// void main() {
-//   runApp(const MyApp());
-// }
-
-// class MyApp extends StatefulWidget {
-//   const MyApp({Key? key}) : super(key: key);
-
-//   @override
-//   _MyAppState createState() => _MyAppState();
-// }
-
-// class _MyAppState extends State<MyApp> {
-//   final _scrollController = ScrollController();
-//   final _gridViewKey = GlobalKey();
-//   final _fruits = <String>["apple", "banana", "strawberry", "appl", "banan", "strawberr", "app", "bana", "strawber"];
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final generatedChildren = List.generate(
-//       _fruits.length,
-//               (index) => Container(
-//         key: Key(_fruits.elementAt(index)),
-//         color: Colors.lightBlue,
-//         child: Text(
-//           _fruits.elementAt(index),
-//         ),
-//       ),
-//     );
-
-//     return MaterialApp(
-//             theme: ThemeData(
-//               primarySwatch: Colors.blue,
-//             ),
-//             home: Scaffold(
-//               body: ReorderableBuilder(
-//                 children: generatedChildren,
-//                 scrollController: _scrollController,
-//                 onReorder: (List<OrderUpdateEntity> orderUpdateEntities) {
-//                  for (final orderUpdateEntity in orderUpdateEntities) {
-//                    print('On reorder');
-//                     final fruit = _fruits.removeAt(orderUpdateEntity.oldIndex);
-//                     _fruits.insert(orderUpdateEntity.newIndex, fruit);
-//                   }
-//                 },
-//                 builder: (children) {
-//                   return GridView(
-//                     key: _gridViewKey,
-//                     controller: _scrollController,
-//                     children: children,
-//                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//                       crossAxisCount: 4,
-//                       mainAxisSpacing: 4,
-//                       crossAxisSpacing: 8,
-//                     ),
-//                   );
-//                 },
-//               ),
-//             ),
-//           );
-//         }
-
-//   }
