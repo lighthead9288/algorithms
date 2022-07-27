@@ -248,25 +248,52 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     borderRadius: BorderRadius.circular(5), 
                                   //  shape: BoxShape.circle
                                   ),
-                                  child: Stack(
-                                    children: [
-                                      Positioned(
-                                        child: Container(
-                                          decoration: const BoxDecoration(
-                                            border: Border(right: BorderSide(color: Colors.black), bottom: BorderSide(color: Colors.black))
+                                  child: GestureDetector(
+                                    child: Stack(
+                                      children: [
+                                        Positioned(
+                                          child: Container(
+                                            decoration: const BoxDecoration(
+                                              border: Border(right: BorderSide(color: Colors.black), bottom: BorderSide(color: Colors.black))
+                                            ),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(2.0),
+                                              child: Text(index.toString(), style: const TextStyle(color: Colors.black, fontSize: 10)),
+                                            ),
                                           ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(2.0),
-                                            child: Text(index.toString(), style: const TextStyle(color: Colors.black, fontSize: 10)),
-                                          ),
+                                          top: 0,
+                                          left: 0
                                         ),
-                                        top: 0,
-                                        left: 0
-                                      ),
-                                      Center(
-                                        child: Text(item.toString(), style: const TextStyle(color: Colors.black)),
-                                      )
-                                    ],
+                                        Center(
+                                          child: Text(item.toString(), style: const TextStyle(color: Colors.black)),
+                                        )
+                                      ],
+                                    ),
+                                    onLongPressUp: (!_stepByStepMode) 
+                                      ? () {
+                                              showDialog(context: context, builder: (_) {
+                                                return AlertDialog(
+                                                  title: const Text('Remove?'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);                                                
+                                                      }, 
+                                                      child: const Text('Cancel')
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context);
+                                                        _removeItem(index);
+                                                        setState(() {});
+                                                      }, 
+                                                      child: const Text('Yes')
+                                                    )
+                                                  ],                                          
+                                                );
+                                              });
+                                            } 
+                                        : null,
                                   ),
                                 ),
                             );
@@ -309,9 +336,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  void _removeItem(int index) {
+    list.removeAt(index);
+    _removeAnimation(index);
+  }
+
   void _addItem(double item) {
     list.add(item);
     _addAnimation(item, list.length - 1);
+  }
+
+  void _removeAnimation(int index) {
+    _switchAnimationControllers.removeAt(index);
+    _switchTweens.removeAt(index);
+    _switchAnimations.removeAt(index);
   }
 
   void _addAnimation(double item, int index) {
