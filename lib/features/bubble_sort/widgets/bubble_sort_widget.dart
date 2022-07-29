@@ -1,19 +1,20 @@
 import 'dart:math';
 
-import 'package:algorithms/models.dart';
-import 'package:algorithms/new_array_value_dialog.dart';
-import 'package:algorithms/playground_widget.dart';
-import 'package:algorithms/random_values_dialog.dart';
+import 'package:algorithms/core/models/models.dart';
+import 'package:algorithms/core/widgets/new_array_value_dialog.dart';
+import 'package:algorithms/core/widgets/playground_widget.dart';
+import 'package:algorithms/core/widgets/random_values_dialog.dart';
+import 'package:algorithms/features/bubble_sort/models/bubble_sort_models.dart';
 import 'package:flutter/material.dart';
 
-class ArraySortWidget extends StatefulWidget {
-  const ArraySortWidget({Key? key}) : super(key: key);
+class BubbleSortWidget extends StatefulWidget {
+  const BubbleSortWidget({Key? key}) : super(key: key);
 
   @override
-  State<ArraySortWidget> createState() => _ArraySortWidgetState();
+  State<BubbleSortWidget> createState() => _BubbleSortWidgetState();
 }
 
-class _ArraySortWidgetState extends State<ArraySortWidget>
+class _BubbleSortWidgetState extends State<BubbleSortWidget>
     with TickerProviderStateMixin
     implements AlgorithmOperations {
   late double _deviceHeight;
@@ -30,7 +31,7 @@ class _ArraySortWidgetState extends State<ArraySortWidget>
 
   Duration _duration = const Duration(milliseconds: 0);
 
-  List<ArraySortChange> _arraySortSteps = [];
+  List<BubbleSortStep> _arraySortSteps = [];
   int _curArraySortStepIndex = 0;
 
   BubbleSortItemState? state = BubbleSortItemState(state: BubbleSortState.None);
@@ -161,7 +162,7 @@ class _ArraySortWidgetState extends State<ArraySortWidget>
                 Navigator.pop(context);
                 var result = await showDialog<double>(
                   context: context, 
-                  builder: (_) => NewArrayValueDialog()
+                  builder: (_) => const NewArrayValueDialog()
                 );
                 _addItem(result!);
                 setState(() {});
@@ -208,7 +209,7 @@ class _ArraySortWidgetState extends State<ArraySortWidget>
     _stepByStepMode = true;
     _duration = const Duration(milliseconds: 0);
     _arraySortSteps.clear();
-    _arraySortSteps.add(ArraySortChange(state: BubbleSortItemState(state: BubbleSortState.None)));
+    _arraySortSteps.add(BubbleSortStep(state: BubbleSortItemState(state: BubbleSortState.None)));
     list = await _sort(list);
   }
 
@@ -300,7 +301,7 @@ class _ArraySortWidgetState extends State<ArraySortWidget>
       _raiseStateChange(newState);
     } else {
       _arraySortSteps.add(
-        ArraySortChange(
+        BubbleSortStep(
           state: newState, 
           swaps: (newState.index != null) 
             ? [ Swap(arraySourceIndex: newState.index!, arrayDestinationIndex: newState.index! + 1) ]

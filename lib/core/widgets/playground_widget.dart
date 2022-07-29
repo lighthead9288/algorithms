@@ -1,6 +1,6 @@
-import 'package:algorithms/auto_control_panel.dart';
-import 'package:algorithms/models.dart';
-import 'package:algorithms/step_by_step_control_panel.dart';
+import 'package:algorithms/core/widgets/auto_control_panel.dart';
+import 'package:algorithms/core/models/models.dart';
+import 'package:algorithms/core/widgets/step_by_step_control_panel.dart';
 import 'package:flutter/material.dart';
 
 class PlaygroundWidget extends StatefulWidget {
@@ -106,9 +106,7 @@ class _PlaygroundWidgetState extends State<PlaygroundWidget> {
                       }, onStepBack: () {
                         widget.operations.onStepBack();
                       }),
-                ),
-                
-                
+                )
               ],
             )
           : const Center(child: CircularProgressIndicator()),
