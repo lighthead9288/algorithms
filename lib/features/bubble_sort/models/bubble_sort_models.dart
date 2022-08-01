@@ -8,12 +8,12 @@ class BubbleSortStep {
 }
 
 class BubbleSortItemState {
-  final BubbleSortState state;
+  final BubbleSortStatus status;
   int? index;
 
-  BubbleSortItemState({required this.state, this.index});
+  BubbleSortItemState({required this.status, this.index});
 }
 
-enum BubbleSortState {
+enum BubbleSortStatus {
   None, Normal, Swap
 }

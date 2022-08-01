@@ -4,21 +4,22 @@ import 'package:algorithms/core/models/models.dart';
 import 'package:algorithms/features/bubble_sort/models/bubble_sort_models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class BubbleSortCubit extends Cubit<BubbleSortItemState> {
+class BubbleSortCubit extends Cubit<BubbleSortWidgetStateChanged> {
   final Future<void> Function(int prev, int next, Duration duration) onAnimateSwap;
-  final void Function(List<double> list) initAnimations;
-  final void Function(double item, int index) onAddAnimation;
-  final Future<void> Function(int index) onRemoveAnimation;
+  final void Function(List<double> list, Duration duration) initAnimations;
+  final void Function(double item, int index, Duration duration) onAddAnimation;
+  final void Function(int index) onRemoveAnimation;
 
   BubbleSortCubit({
-    required BubbleSortItemState initialState, 
+    required BubbleSortWidgetStateChanged initialState, 
     required this.onAnimateSwap, 
     required this.initAnimations,
     required this.onAddAnimation, 
     required this.onRemoveAnimation
   }) : super(initialState) {
     list = List.generate(10, (index) => double.parse(Random().nextDouble().toStringAsFixed(3)));
-    initAnimations(list);
+    initAnimations(list, _duration);
+    emit(BubbleSortWidgetStateChanged(state: BubbleSortItemState(status: BubbleSortStatus.None), list: list, stepByStepMode: _stepByStepMode));
   }
 
   List<double> list = [];
@@ -31,9 +32,9 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
   List<BubbleSortStep> _arraySortSteps = [];
   int _curArraySortStepIndex = 0;
 
-  BubbleSortItemState _curState = BubbleSortItemState(state: BubbleSortState.None);
+  BubbleSortItemState _curState = BubbleSortItemState(status: BubbleSortStatus.None);
 
-  Future<List<double>> _sort(List<double> list) async {
+  Future<List<double>> sort(List<double> list) async {
     var oldList = List<double>.from(list);
     _curArraySortStepIndex = 0;
     for(int i = 0; i < list.length - 1; i++) {
@@ -42,14 +43,13 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
         if (_isStopped) {
           // Stop
           _isStopped = false;
-          _curState = BubbleSortItemState(state: BubbleSortState.None);
-          _onStateChange(_curState);
+          _curState = BubbleSortItemState(status: BubbleSortStatus.None);          
           return oldList;
         }
         if (list[j] > list[j+1]) {
           // Swap
           isNormalOrder = false;
-          _curState = BubbleSortItemState(state: BubbleSortState.Swap, index: j);
+          _curState = BubbleSortItemState(status: BubbleSortStatus.Swap, index: j);
           _onStateChange(_curState);
           await Future.delayed(_duration);
 
@@ -58,7 +58,7 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
          
         } else {
           // Normal
-          _curState = BubbleSortItemState(state: BubbleSortState.Normal, index: j);
+          _curState = BubbleSortItemState(status: BubbleSortStatus.Normal, index: j);
           _onStateChange(_curState);
           await Future.delayed(_duration);
         } 
@@ -66,17 +66,19 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
       if (isNormalOrder) break;
     }
     // Finish
-    _curState = BubbleSortItemState(state: BubbleSortState.None); 
+    _curState = BubbleSortItemState(status: BubbleSortStatus.None); 
     _onStateChange(_curState);
     return (!_stepByStepMode) ? list : oldList;
   }
 
   Future<void> onStepByStepMode() async {
     _stepByStepMode = true;
+    emit(BubbleSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
     _duration = const Duration(milliseconds: 0);
     _arraySortSteps.clear();
-    _arraySortSteps.add(BubbleSortStep(state: BubbleSortItemState(state: BubbleSortState.None)));
-    list = await _sort(list);
+    _arraySortSteps.add(BubbleSortStep(state: BubbleSortItemState(status: BubbleSortStatus.None)));
+    list = await sort(list);
+    emit(BubbleSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
 
   void _swapElements(int prev, int next) {
@@ -87,7 +89,7 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
 
   void _onStateChange(BubbleSortItemState newState) {
     if (!_stepByStepMode) {
-      emit(newState);
+      emit(BubbleSortWidgetStateChanged(state: newState, list: list, stepByStepMode: _stepByStepMode));
     } else {
       _arraySortSteps.add(
         BubbleSortStep(
@@ -102,30 +104,45 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
 
   void onStepForward() async {
     var curStep = _arraySortSteps[_curArraySortStepIndex];
-    emit(curStep.state);
+    emit(BubbleSortWidgetStateChanged(state: curStep.state, list: list, stepByStepMode: _stepByStepMode));
     await Future.delayed(const Duration(milliseconds: 500));
-    if (curStep.state.state == BubbleSortState.Swap) {            
+    if (curStep.state.status == BubbleSortStatus.Swap) {            
       for (var swap in curStep.swaps) {
         onAnimateSwap(swap.arraySourceIndex, swap.arrayDestinationIndex, const Duration(milliseconds: 500));
         _swapElements(swap.arraySourceIndex, swap.arrayDestinationIndex);
       }
-      emit(curStep.state);      
+      emit(BubbleSortWidgetStateChanged(state: curStep.state, list: list, stepByStepMode: _stepByStepMode));      
     }
     _curArraySortStepIndex = (_curArraySortStepIndex == _arraySortSteps.length - 1) ? _arraySortSteps.length - 1 : _curArraySortStepIndex + 1;
   }
 
   void onStepBack() async {
     var curStep = _arraySortSteps[_curArraySortStepIndex];
-    emit(curStep.state);
+    emit(BubbleSortWidgetStateChanged(state: curStep.state, list: list, stepByStepMode: _stepByStepMode));
     await Future.delayed(const Duration(milliseconds: 500));
-    if (curStep.state.state == BubbleSortState.Swap) {            
+    if (curStep.state.status == BubbleSortStatus.Swap) {            
       for (var swap in curStep.swaps) {
         onAnimateSwap(swap.arraySourceIndex, swap.arrayDestinationIndex, const Duration(milliseconds: 500));
         _swapElements(swap.arrayDestinationIndex, swap.arraySourceIndex);
       }
-      emit(curStep.state);      
+      emit(BubbleSortWidgetStateChanged(state: curStep.state, list: list, stepByStepMode: _stepByStepMode));      
     }
     _curArraySortStepIndex = (_curArraySortStepIndex == 0) ? 0 : _curArraySortStepIndex - 1;
+  }
+
+   Future<void> onPlay() async {
+    list = await sort(list);
+    _onStateChange(_curState);
+    //return await Future.delayed(Duration(seconds: 3));
+  }
+
+  void onStop() {
+    _isStopped = true;
+  }
+
+  void onAutoMode() {
+    _stepByStepMode = false;
+    emit(BubbleSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
 
   void onRemoveItem(int index) {
@@ -137,9 +154,34 @@ class BubbleSortCubit extends Cubit<BubbleSortItemState> {
     _duration = Duration(milliseconds: value);
   }
 
-  void _addItem(double item) {
+  void onAddItem(double item) {
     list.add(item);
-    onAddAnimation(item, list.length - 1);
+    onAddAnimation(item, list.length - 1, _duration);
+    emit(BubbleSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
+
+  void onRandomNumbersGenerate(int count) {
+    var newItems = List.generate(count, (index) => double.parse(Random().nextDouble().toStringAsFixed(3)));
+    for(var item in newItems) {
+      onAddItem(item);
+    }
+  }
+}
+
+abstract class BubbleSortWidgetState {
+  final BubbleSortItemState state;
+  final List<double> list;
+
+  BubbleSortWidgetState({required this.state, required this.list});
+}
+
+// class BubbleSortWidgetStateStatusChanged extends BubbleSortWidgetState {
+//   BubbleSortWidgetStateStatusChanged({required BubbleSortItemState state, required List<double> list}) : super(state: state, list: list);
+// }
+
+class BubbleSortWidgetStateChanged extends BubbleSortWidgetState {
+  final bool stepByStepMode;
+
+  BubbleSortWidgetStateChanged({required BubbleSortItemState state, required List<double> list, required this.stepByStepMode}) : super(state: state, list: list);
 }
 
