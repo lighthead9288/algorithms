@@ -231,7 +231,7 @@ class _BubbleSortWidgetState extends State<BubbleSortWidget>
 
   @override
   Future<void> onPlay() async =>
-      await _cubitContext.read<BubbleSortCubit>().onPlay();
+    await _cubitContext.read<BubbleSortCubit>().onPlay();
 
   @override
   void onStop() => _cubitContext.read<BubbleSortCubit>().onStop();
