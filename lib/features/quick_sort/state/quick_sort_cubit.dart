@@ -5,9 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
   QuickSortCubit({required QuickSortWidgetStateChanged initialState}) : super(initialState) {
-   // list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
-    list = [6, 7, 2, 5, 9, 1, 3, 8];
-   // list = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+    list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
+   // list = [6, 7, 2, 5, 9, 1, 3, 8];
+  //  list = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
     emit(QuickSortWidgetStateChanged(list: list, state: _curState, stepByStepMode: _stepByStepMode));
   }
 
@@ -29,26 +29,22 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     var i = left;
     var j = right;
     var pivot = list[i];
-
     do {
-      while (list[i] < pivot) {
-        i++;
-      }
-      while(list[j] > pivot) {
+      while  ((i < j) && (list[j] >= pivot)) {
         j--;
       }
-      if (i <= j) {
-        _swapElements(i, j);
+      _swapElements(i, j);
+      while ((i < j) && (list[i] <= pivot)) {
         i++;
-        j--;
       }
-    } while (i <= j);
+      _swapElements(i, j);
+    } while (i < j);
 
-    if (j > right) {
-      list = await sort(list, left, j);
+    if (i > left) {
+      list = await sort(list, left, i - 1);
     }
-    if (right > i) {
-      list = await sort(list, i, right - 1);
+    if (j < right) {
+      list = await sort(list, i + 1, right);
     }
     return list;
   }
