@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
   QuickSortCubit({required QuickSortWidgetStateChanged initialState}) : super(initialState) {
-    list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
-   // list = [6, 7, 2, 5, 9, 1, 3, 8];
+   // list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
+    list = [6, 7, 2, 5, 9, 1, 3, 8];
   //  list = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
     emit(QuickSortWidgetStateChanged(list: list, state: _curState, stepByStepMode: _stepByStepMode));
   }
@@ -29,15 +29,26 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     var i = left;
     var j = right;
     var pivot = list[i];
+    var pivotIndex = i;
+    _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
+    await Future.delayed(_duration);
     do {
       while  ((i < j) && (list[j] >= pivot)) {
         j--;
+        _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
+        await Future.delayed(_duration);
       }
-      _swapElements(i, j);
+    
+      pivotIndex = _onSwap(i, j, pivotIndex);
+      
       while ((i < j) && (list[i] <= pivot)) {
         i++;
+        _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
+        await Future.delayed(_duration);
       }
-      _swapElements(i, j);
+     
+      pivotIndex = _onSwap(i, j, pivotIndex);
+
     } while (i < j);
 
     if (i > left) {
@@ -46,7 +57,28 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     if (j < right) {
       list = await sort(list, i + 1, right);
     }
+    _onStateChange(QuickSortItemState(status: QuickSortStatus.None));
     return list;
+  }
+
+  int _onSwap(int i, int j, int pivotIndex) {
+    var newPivot = pivotIndex;
+    if (i == pivotIndex) {
+      newPivot = i;
+    }
+    if (j == pivotIndex) {
+      newPivot = j;
+    }
+    _swapElements(i, j);
+    return newPivot;
+  }
+
+  void _onStateChange(QuickSortItemState newState) {
+    _curState = newState;
+    if (!_stepByStepMode) {
+      emit(QuickSortWidgetStateChanged(state: newState, list: list, stepByStepMode: _stepByStepMode));
+    } else {
+    }
   }
 
   void _swapElements(int prev, int next) {

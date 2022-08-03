@@ -1,10 +1,10 @@
 class QuickSortItemState {
   final QuickSortStatus status;
-  final int leftItemIndex;
-  final int rightItemIndex;
-  final int pivotItemIndex;
+  int? leftItemIndex;
+  int? rightItemIndex;
+  int? pivotItemIndex;
 
-  QuickSortItemState({required this.status, required this.leftItemIndex, required this.rightItemIndex, required this.pivotItemIndex});
+  QuickSortItemState({required this.status, this.leftItemIndex, this.rightItemIndex, this.pivotItemIndex});
 }
 
 enum QuickSortStatus {

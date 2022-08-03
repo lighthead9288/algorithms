@@ -83,7 +83,7 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
           child: Center(
             child: Container(
               padding: const EdgeInsets.all(5),
-              width: _deviceWidth * 0.3,
+              width: _deviceWidth * 0.57,
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
                 shrinkWrap: true,
@@ -101,60 +101,77 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   }
 
   Widget _quickSortArrayItemUI(QuickSortWidgetStateChanged widgetState, double item, int index) {
-    return Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        width: _deviceWidth * 0.15,
-        height: _deviceWidth * 0.15,
-        decoration: BoxDecoration(
-          //  color: Colors.red,
-          // border: Border.all(
-          //     color: (widgetState.state.status != BubbleSortStatus.None)
-          //         ? (widgetState.state.status == BubbleSortStatus.Normal)
-          //             ? ((index == widgetState.state.index) ||
-          //                     (index == (widgetState.state.index ?? 0) + 1))
-          //                 ? Colors.green
-          //                 : Colors.black
-          //             : ((index == widgetState.state.index) ||
-          //                     (index == (widgetState.state.index ?? 0) + 1))
-          //                 ? Colors.red
-          //                 : Colors.black
-          //         : Colors.black,
-          //     width: 5),
-          border: Border.all(color: Colors.black, width: 5),
-          borderRadius: BorderRadius.circular(5),
-          //  shape: BoxShape.circle
-        ),
-        child: GestureDetector(
-          child: Stack(
-            children: [
-              Positioned(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                        border: Border(
-                            right: BorderSide(color: Colors.black),
-                            bottom: BorderSide(color: Colors.black))),
-                    child: Padding(
-                      padding: const EdgeInsets.all(2.0),
-                      child: Text(index.toString(),
-                          style: const TextStyle(
-                              color: Colors.black, fontSize: 10)),
-                    ),
-                  ),
-                  top: 0,
-                  left: 0),
-              Center(
-                child: Text(item.toString(),
-                    style: const TextStyle(color: Colors.black)),
-              )
-            ],
+    bool isPivot = index == widgetState.state.pivotItemIndex;
+    bool isLeft = index == widgetState.state.leftItemIndex;
+    bool isRight = index == widgetState.state.rightItemIndex;
+    return Row(
+      children: [         
+        SizedBox(
+          width: _deviceWidth * 0.1,
+          child: Text(
+            (isPivot) && (widgetState.state.status != QuickSortStatus.None) ? 'Pivot' : '', 
+            style: const TextStyle(color: Colors.brown)
+          )
+        ), 
+        const SizedBox(width: 10),
+        Container(
+          margin: const EdgeInsets.only(bottom: 10),
+          width: _deviceWidth * 0.15,
+          height: _deviceWidth * 0.15,
+          decoration: BoxDecoration(
+            border: Border.all(
+                color: (widgetState.state.status != QuickSortStatus.None)
+                    ? (isLeft) 
+                      ? Colors.blue
+                      : (isRight) 
+                        ? Colors.orange
+                        : Colors.black
+                    : Colors.black,
+                width: 5),
+            borderRadius: BorderRadius.circular(5),
           ),
-          onLongPressUp: (!widgetState.stepByStepMode)
-              ? () {
-                 // _onLongPressUp(index);
-                }
-              : null,
+          child: GestureDetector(
+            child: Stack(
+              children: [
+                Positioned(
+                    child: Container(
+                      decoration: const BoxDecoration(
+                          border: Border(
+                              right: BorderSide(color: Colors.black),
+                              bottom: BorderSide(color: Colors.black))),
+                      child: Padding(
+                        padding: const EdgeInsets.all(2.0),
+                        child: Text(index.toString(),
+                            style: const TextStyle(
+                                color: Colors.black, fontSize: 10)),
+                      ),
+                    ),
+                    top: 0,
+                    left: 0),
+                Center(
+                  child: Text(item.toString(),
+                      style: const TextStyle(color: Colors.black)),
+                )
+              ],
+            ),
+            onLongPressUp: (!widgetState.stepByStepMode)
+                ? () {
+                  // _onLongPressUp(index);
+                  }
+                : null,
+          ),
         ),
-      );
+        const SizedBox(width: 10),
+        SizedBox(
+          width: _deviceWidth * 0.1,
+          child: (isLeft && (widgetState.state.status != QuickSortStatus.None)) 
+            ? const Text('Left', style: TextStyle(color: Colors.blue))
+            : (isRight && (widgetState.state.status != QuickSortStatus.None)) 
+              ? const Text('Right', style: TextStyle(color: Colors.orange))
+              : const Text('')
+        )
+      ],
+    );
   }
 
   @override
@@ -163,9 +180,7 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   }
 
   @override
-  void onDurationChange(int value) {
-    // TODO: implement onDurationChange
-  }
+  void onDurationChange(int value) => _cubitContext.read<QuickSortCubit>().onDurationChange(value);
 
   @override
   Future<void> onPlay() async {
