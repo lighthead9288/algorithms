@@ -20,6 +20,13 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   late double _deviceHeight;
   late double _deviceWidth;
 
+  List<AnimationController> _switchAnimationControllers = [];
+  List<Tween<Offset>> _switchTweens = [];
+  List<Animation<Offset>> _switchAnimations = [];
+
+  List<AnimationController> _arrayBoundsFadeAnimationControllers = [];
+  List<Animation<double>> _arrayBoundsFadeAnimations = [];
+
   late BuildContext _cubitContext;
 
   @override
@@ -37,7 +44,12 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
             rightItemIndex: 0, 
             pivotItemIndex: 0
           )
-        )
+        ),
+        initAnimations: (list, duration) => _onInitAnimations(list, duration),
+        onAddAnimation: (index, duration) => _onAddAnimation(index, duration),
+        onAnimateArrayBounds: (left, right, duration) => _onAnimateArrayBounds(left, right, duration),
+        onRemoveAnimation: (index) => _onRemoveAnimation(index),
+        onAnimateSwap: (prev, next, duration) => _onAnimateSwap(prev, next, duration),
       ),
       child: BlocBuilder<QuickSortCubit, QuickSortWidgetStateChanged>(
         builder: ((context, state) {
@@ -52,9 +64,10 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
                     onTap: () async {
                       Navigator.pop(context);
                       var result = await showDialog<double>(
-                          context: context,
-                          builder: (_) => const NewArrayValueDialog());
-                      // _cubitContext.read<BubbleSortCubit>().onAddItem(result!);
+                        context: context,
+                        builder: (_) => const NewArrayValueDialog()
+                      );
+                      _cubitContext.read<QuickSortCubit>().onAddItem(result!);
                     }),
                 EditDataOption(
                     title: 'Random numbers',
@@ -62,11 +75,10 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
                     onTap: () async {
                       Navigator.pop(context);
                       var result = await showDialog<int>(
-                          context: context,
-                          builder: (_) => const RandomValuesDialog());
-                      // _cubitContext
-                      //     .read<BubbleSortCubit>()
-                      //     .onRandomNumbersGenerate(result!);
+                        context: context,
+                        builder: (_) => const RandomValuesDialog()
+                      );
+                      _cubitContext.read<QuickSortCubit>().onRandomNumbersGenerate(result!);
                     })
               ]
           );
@@ -83,7 +95,7 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
           child: Center(
             child: Container(
               padding: const EdgeInsets.all(5),
-              width: _deviceWidth * 0.57,
+              width: _deviceWidth * 0.6,
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
                 shrinkWrap: true,
@@ -104,61 +116,93 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
     bool isPivot = index == widgetState.state.pivotItemIndex;
     bool isLeft = index == widgetState.state.leftItemIndex;
     bool isRight = index == widgetState.state.rightItemIndex;
+    bool isInitialLeft = index == widgetState.state.leftInitialIndex;
+    bool isInitialRight = index == widgetState.state.rightInitialIndex;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [         
         SizedBox(
-          width: _deviceWidth * 0.1,
-          child: Text(
-            (isPivot) && (widgetState.state.status != QuickSortStatus.None) ? 'Pivot' : '', 
-            style: const TextStyle(color: Colors.brown)
-          )
+          height: _deviceWidth * 0.15,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+                FadeTransition(
+                  opacity: _arrayBoundsFadeAnimations[index],
+                  child: Container(
+                    width: _deviceWidth * 0.15,
+                    height: 2,
+                    color: isInitialLeft ? Colors.blue : null,
+                  )
+                ),
+                Center(
+                  child: SizedBox(
+                    width: _deviceWidth * 0.1,
+                    child: Text(
+                      (isPivot) && (widgetState.state.status != QuickSortStatus.None) ? 'Pivot' : '', 
+                      style: const TextStyle(color: Colors.brown)
+                    )
+                  ),
+                ),
+                FadeTransition(
+                  opacity: _arrayBoundsFadeAnimations[index],
+                  child: Container(
+                    width: _deviceWidth * 0.15,
+                    height: 2,
+                    color: isInitialRight ? Colors.orange : null,
+                  ),
+                ),
+            ],
+          ),
         ), 
         const SizedBox(width: 10),
-        Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          width: _deviceWidth * 0.15,
-          height: _deviceWidth * 0.15,
-          decoration: BoxDecoration(
-            border: Border.all(
-                color: (widgetState.state.status != QuickSortStatus.None)
-                    ? (isLeft) 
-                      ? Colors.blue
-                      : (isRight) 
-                        ? Colors.orange
-                        : Colors.black
-                    : Colors.black,
-                width: 5),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: GestureDetector(
-            child: Stack(
-              children: [
-                Positioned(
-                    child: Container(
-                      decoration: const BoxDecoration(
-                          border: Border(
-                              right: BorderSide(color: Colors.black),
-                              bottom: BorderSide(color: Colors.black))),
-                      child: Padding(
-                        padding: const EdgeInsets.all(2.0),
-                        child: Text(index.toString(),
-                            style: const TextStyle(
-                                color: Colors.black, fontSize: 10)),
-                      ),
-                    ),
-                    top: 0,
-                    left: 0),
-                Center(
-                  child: Text(item.toString(),
-                      style: const TextStyle(color: Colors.black)),
-                )
-              ],
+        SlideTransition(
+          position: _switchAnimations[index],
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            width: _deviceWidth * 0.15,
+            height: _deviceWidth * 0.15,
+            decoration: BoxDecoration(
+              border: Border.all(
+                  color: (widgetState.state.status != QuickSortStatus.None)
+                      ? (isLeft) 
+                        ? Colors.blue
+                        : (isRight) 
+                          ? Colors.orange
+                          : Colors.black
+                      : Colors.black,
+                  width: 5),
+              borderRadius: BorderRadius.circular(5),
             ),
-            onLongPressUp: (!widgetState.stepByStepMode)
-                ? () {
-                  // _onLongPressUp(index);
-                  }
-                : null,
+            child: GestureDetector(
+              child: Stack(
+                children: [
+                  Positioned(
+                      child: Container(
+                        decoration: const BoxDecoration(
+                            border: Border(
+                                right: BorderSide(color: Colors.black),
+                                bottom: BorderSide(color: Colors.black))),
+                        child: Padding(
+                          padding: const EdgeInsets.all(2.0),
+                          child: Text(index.toString(),
+                              style: const TextStyle(
+                                  color: Colors.black, fontSize: 10)),
+                        ),
+                      ),
+                      top: 0,
+                      left: 0),
+                  Center(
+                    child: Text(item.toString(),
+                        style: const TextStyle(color: Colors.black)),
+                  )
+                ],
+              ),
+              onLongPressUp: (!widgetState.stepByStepMode)
+                  ? () {
+                      _onLongPressUp(index);
+                    }
+                  : null,
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -174,10 +218,95 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
     );
   }
 
-  @override
-  void onAutoMode() {
-    // TODO: implement onAutoMode
+  void _onLongPressUp(int index) {
+    showDialog(
+        context: context,
+        builder: (_) {
+          return AlertDialog(
+            title: const Text('Remove?'),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Cancel')),
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onRemoveItem(index);
+                    setState(() {});
+                  },
+                  child: const Text('Yes'))
+            ],
+          );
+        });
   }
+
+  Future<void> _onAnimateSwap(int prev, int next, Duration duration) async {
+    if (next == prev) {
+      return;
+    }
+    var delta = next - prev;
+    Offset offsetForLeft = Offset(0, delta.toDouble());
+    Offset offsetForRight = Offset(0, - delta.toDouble());
+
+    _switchTweens[prev].end = offsetForLeft;
+    _switchAnimationControllers[prev].duration = duration;
+    _switchAnimationControllers[prev].forward();
+
+    _switchTweens[next].end = offsetForRight;
+    _switchAnimationControllers[next].duration = duration;
+    _switchAnimationControllers[next].forward();
+
+    await Future.delayed(duration);
+
+    _switchAnimationControllers[prev].reverse();
+    _switchAnimationControllers[next].reverse();    
+  }
+
+  Future<void> _onAnimateArrayBounds(int left, int right, Duration duration) async {
+    _arrayBoundsFadeAnimationControllers[left].animateTo(1);
+    await Future.delayed(const Duration(milliseconds: 100));
+    _arrayBoundsFadeAnimationControllers[left].animateTo(0);
+    await Future.delayed(const Duration(milliseconds: 100));
+    _arrayBoundsFadeAnimationControllers[left].animateTo(1);
+
+    _arrayBoundsFadeAnimationControllers[right].animateTo(1);
+    await Future.delayed(const Duration(milliseconds: 100));
+    _arrayBoundsFadeAnimationControllers[right].animateTo(0);
+    await Future.delayed(const Duration(milliseconds: 100));
+    _arrayBoundsFadeAnimationControllers[right].animateTo(1);
+  }
+
+  void _onRemoveAnimation(int index) {
+    _switchAnimationControllers.removeAt(index);
+    _switchTweens.removeAt(index);
+    _switchAnimations.removeAt(index);
+  }
+
+  void _onAddAnimation(int index, Duration duration) {
+    _switchAnimationControllers.add(AnimationController(
+        vsync: this,
+        duration: duration,
+        reverseDuration: const Duration(seconds: 0)));
+    _switchTweens.add(Tween<Offset>(begin: Offset.zero, end: Offset.zero));
+    _switchAnimations.add(_switchTweens[index].animate(_switchAnimationControllers[index]));
+
+    _arrayBoundsFadeAnimationControllers.add(AnimationController(
+      vsync: this,
+      duration: duration
+    ));
+    _arrayBoundsFadeAnimations.add(CurvedAnimation(parent: _arrayBoundsFadeAnimationControllers[index], curve: Curves.easeOut));
+  }
+
+  void _onInitAnimations(List<double> list, Duration duration) {
+    for (int i = 0; i < list.length; i++) {
+      _onAddAnimation(i, duration);
+    }
+  }
+
+  @override
+  void onAutoMode() => _cubitContext.read<QuickSortCubit>().onAutoMode();
 
   @override
   void onDurationChange(int value) => _cubitContext.read<QuickSortCubit>().onDurationChange(value);
@@ -188,9 +317,7 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   }
 
   @override
-  void onRemoveItem(int index) {
-    // TODO: implement onRemoveItem
-  }
+  void onRemoveItem(int index) => _cubitContext.read<QuickSortCubit>().onRemoveItem(index);
 
   @override
   void onStepBack() {
@@ -198,10 +325,7 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   }
 
   @override
-  Future<void> onStepByStepMode() {
-    // TODO: implement onStepByStepMode
-    throw UnimplementedError();
-  }
+  Future<void> onStepByStepMode() => _cubitContext.read<QuickSortCubit>().onStepByStepMode();
 
   @override
   void onStepForward() {
@@ -209,7 +333,5 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   }
 
   @override
-  void onStop() {
-    // TODO: implement onStop
-  }
+  void onStop() => _cubitContext.read<QuickSortCubit>().onStop();
 }

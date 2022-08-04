@@ -4,14 +4,29 @@ import 'package:algorithms/features/quick_sort/models/quick_sort_models.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
-  QuickSortCubit({required QuickSortWidgetStateChanged initialState}) : super(initialState) {
-   // list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
-    list = [6, 7, 2, 5, 9, 1, 3, 8];
-  //  list = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+  final Future<void> Function(int prev, int next, Duration duration) onAnimateSwap;
+  final Future<void> Function(int left, int right, Duration duration) onAnimateArrayBounds;
+  final void Function(List<double> list, Duration duration) initAnimations;
+  final void Function(int index, Duration duration) onAddAnimation;
+  final void Function(int index) onRemoveAnimation;
+
+  QuickSortCubit({
+    required QuickSortWidgetStateChanged initialState,
+    required this.onAnimateSwap,
+    required this.onAnimateArrayBounds, 
+    required this.initAnimations,
+    required this.onAddAnimation, 
+    required this.onRemoveAnimation
+  }) : super(initialState) {
+    list = List.generate(8, (index) => double.parse((Random().nextDouble() * 10).toStringAsFixed(3)));
+   // list = [6, 7, 2, 5, 9, 1, 3, 8];
+    //list = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3];
+    initAnimations(list, _duration);
     emit(QuickSortWidgetStateChanged(list: list, state: _curState, stepByStepMode: _stepByStepMode));
   }
 
   List<double> list = [];
+  List<double> _oldList = [];
 
   bool _stepByStepMode = false;
   bool _isStopped = false;
@@ -26,28 +41,42 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
   );
 
   Future<List<double>> sort(List<double> list, int left, int right) async {
+    onAnimateArrayBounds(left, right, _duration);
     var i = left;
     var j = right;
     var pivot = list[i];
     var pivotIndex = i;
-    _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
+    _onStateChange(
+      QuickSortItemState(
+        status: QuickSortStatus.Started, 
+        leftItemIndex: i, 
+        rightItemIndex: j, 
+        pivotItemIndex: pivotIndex,
+        leftInitialIndex: left,
+        rightInitialIndex: right
+      )
+    );
     await Future.delayed(_duration);
     do {
-      while  ((i < j) && (list[j] >= pivot)) {
+      while  ((i < j) && (list[j] >= pivot) && (!_isStopped)) {
         j--;
-        _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
-        await Future.delayed(_duration);
-      }
-    
-      pivotIndex = _onSwap(i, j, pivotIndex);
+        await _onShiftBound(i, j, pivotIndex, left, right);
+      }    
       
-      while ((i < j) && (list[i] <= pivot)) {
+      pivotIndex = await _onSwap(i, j, pivotIndex);
+      
+      while ((i < j) && (list[i] <= pivot) && (!_isStopped)) {
         i++;
-        _onStateChange(QuickSortItemState(status: QuickSortStatus.Started, leftItemIndex: i, rightItemIndex: j, pivotItemIndex: pivotIndex));
-        await Future.delayed(_duration);
+        await _onShiftBound(i, j, pivotIndex, left, right);        
+      }     
+      pivotIndex = await _onSwap(i, j, pivotIndex);
+
+      if (_isStopped) {
+          // Stop
+        _isStopped = false;
+        _onStateChange(QuickSortItemState(status: QuickSortStatus.None));         
+        return _oldList;
       }
-     
-      pivotIndex = _onSwap(i, j, pivotIndex);
 
     } while (i < j);
 
@@ -61,13 +90,29 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     return list;
   }
 
-  int _onSwap(int i, int j, int pivotIndex) {
+  Future<void> _onShiftBound(int i, int j, int pivotIndex, int left, int right) async {
+    _onStateChange(
+      QuickSortItemState(
+        status: QuickSortStatus.Started, 
+        leftItemIndex: i, 
+        rightItemIndex: j, 
+        pivotItemIndex: pivotIndex,
+        leftInitialIndex: left,
+        rightInitialIndex: right
+      )
+    );
+    await Future.delayed(_duration);
+  }
+
+  Future<int> _onSwap(int i, int j, int pivotIndex) async {
+    await onAnimateSwap(i, j, _duration);
+
     var newPivot = pivotIndex;
     if (i == pivotIndex) {
-      newPivot = i;
+      newPivot = j;
     }
     if (j == pivotIndex) {
-      newPivot = j;
+      newPivot = i;
     }
     _swapElements(i, j);
     return newPivot;
@@ -75,6 +120,7 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
 
   void _onStateChange(QuickSortItemState newState) {
     _curState = newState;
+    
     if (!_stepByStepMode) {
       emit(QuickSortWidgetStateChanged(state: newState, list: list, stepByStepMode: _stepByStepMode));
     } else {
@@ -88,6 +134,7 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
   }
 
    Future<void> onPlay() async {
+    _oldList = List<double>.from(list);
     list = await sort(list, 0 , list.length - 1);
     emit(QuickSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
@@ -101,9 +148,12 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     emit(QuickSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
 
+  Future<void> onStepByStepMode() async {
+  }
+
   void onRemoveItem(int index) {
     list.removeAt(index);
-   // onRemoveAnimation(index);
+    onRemoveAnimation(index);
   }
 
   void onDurationChange(int value) {
@@ -112,7 +162,7 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
 
   void onAddItem(double item) {
     list.add(item);
-   // onAddAnimation(item, list.length - 1, _duration);
+    onAddAnimation(list.length - 1, _duration);
     emit(QuickSortWidgetStateChanged(state: _curState, list: list, stepByStepMode: _stepByStepMode));
   }
 
@@ -123,8 +173,6 @@ class QuickSortCubit extends Cubit<QuickSortWidgetStateChanged> {
     }
   }
 }
-
-
 
 abstract class QuickSortWidgetState {
   final QuickSortItemState state;
