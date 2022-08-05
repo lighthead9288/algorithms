@@ -10,5 +10,5 @@ class QuickSortItemState {
 }
 
 enum QuickSortStatus {
-  None, Started
+  None, InitBorders, Normal, Swap
 }

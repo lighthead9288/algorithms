@@ -67,7 +67,14 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
                         context: context,
                         builder: (_) => const NewArrayValueDialog()
                       );
-                      _cubitContext.read<QuickSortCubit>().onAddItem(result!);
+                      if (result != null) {
+                         _cubitContext.read<QuickSortCubit>().onAddItem(
+                            result, 
+                            onError: (message) {
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+                            }
+                          );
+                      }                     
                     }),
                 EditDataOption(
                     title: 'Random numbers',
@@ -78,7 +85,14 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
                         context: context,
                         builder: (_) => const RandomValuesDialog()
                       );
-                      _cubitContext.read<QuickSortCubit>().onRandomNumbersGenerate(result!);
+                      if (result != null) {
+                        _cubitContext.read<QuickSortCubit>().onRandomNumbersGenerate(
+                          result,
+                          onError: (message) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
+                          }
+                        );
+                      }                      
                     })
               ]
           );
@@ -320,17 +334,13 @@ class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderSt
   void onRemoveItem(int index) => _cubitContext.read<QuickSortCubit>().onRemoveItem(index);
 
   @override
-  void onStepBack() {
-    // TODO: implement onStepBack
-  }
+  void onStepBack() => _cubitContext.read<QuickSortCubit>().onStepBack();
 
   @override
   Future<void> onStepByStepMode() => _cubitContext.read<QuickSortCubit>().onStepByStepMode();
 
   @override
-  void onStepForward() {
-    // TODO: implement onStepForward
-  }
+  void onStepForward() => _cubitContext.read<QuickSortCubit>().onStepForward();
 
   @override
   void onStop() => _cubitContext.read<QuickSortCubit>().onStop();
