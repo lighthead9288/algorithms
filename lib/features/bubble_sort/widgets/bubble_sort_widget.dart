@@ -112,7 +112,6 @@ class _BubbleSortWidgetState extends State<BubbleSortWidget>
       position: _switchAnimations[index],
       child: Container(
         decoration: BoxDecoration(
-          //  color: Colors.red,
           border: Border.all(
               color: (widgetState.state.status != BubbleSortStatus.None)
                   ? (widgetState.state.status == BubbleSortStatus.Normal)
@@ -127,7 +126,6 @@ class _BubbleSortWidgetState extends State<BubbleSortWidget>
                   : Colors.black,
               width: 5),
           borderRadius: BorderRadius.circular(5),
-          //  shape: BoxShape.circle
         ),
         child: GestureDetector(
           child: Stack(
@@ -231,7 +229,7 @@ class _BubbleSortWidgetState extends State<BubbleSortWidget>
 
   @override
   Future<void> onPlay() async =>
-      await _cubitContext.read<BubbleSortCubit>().onPlay();
+    await _cubitContext.read<BubbleSortCubit>().onPlay();
 
   @override
   void onStop() => _cubitContext.read<BubbleSortCubit>().onStop();
