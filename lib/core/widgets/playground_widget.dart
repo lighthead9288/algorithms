@@ -34,7 +34,7 @@ class _PlaygroundWidgetState extends State<PlaygroundWidget> {
       appBar: AppBar(
           actions: (!_isLoading)
               ? [
-                  (!_stepByStepMode)
+                  (!_stepByStepMode) && (widget.editOptions.isNotEmpty)
                       ? PopupMenuButton(
                           icon: const Icon(Icons.edit),
                           itemBuilder: (_) {
