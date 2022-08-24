@@ -1,12 +1,11 @@
-import 'package:adaptive_scrollbar/adaptive_scrollbar.dart';
 import 'package:algorithms/core/models/models.dart';
 import 'package:algorithms/core/widgets/playground_widget.dart';
 import 'package:algorithms/features/tree/models/binary_tree.dart';
+import 'package:algorithms/features/tree/models/traverse_algorithms.dart';
 import 'package:algorithms/features/tree/widgets/traverse_algorithms_dialog.dart';
 import 'package:algorithms/features/tree/widgets/tree_operations_dialog.dart';
 import 'package:algorithms/features/tree/widgets/tree_painter.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class TreeWidget extends StatefulWidget {
   const TreeWidget({Key? key}) : super(key: key);
@@ -16,7 +15,7 @@ class TreeWidget extends StatefulWidget {
 }
 
 class _TreeWidgetState extends State<TreeWidget>
-    implements AlgorithmOperations {
+    implements AlgorithmOperations<BinaryTreeNode> {
   late double _deviceHeight;
   late double _deviceWidth;
 
@@ -86,6 +85,11 @@ class _TreeWidgetState extends State<TreeWidget>
   List<String> _nodes = [];
   int _curNodeNumber = 26;
   Duration _duration = const Duration(milliseconds: 0);
+  bool _isStopped = false;
+  bool _stepByStepMode = false;
+
+  List<TreeTraverseStep> _traverseSteps = [];
+  int _curTraverseStepIndex = 0;
 
   @override
   void initState() {
@@ -105,11 +109,6 @@ class _TreeWidgetState extends State<TreeWidget>
   Widget _treeWidgetUI(BuildContext context) {
     return SizedBox(
       width: _deviceWidth,
-      child: AdaptiveScrollbar(
-        controller: _verticalScrollController,
-        child: AdaptiveScrollbar(
-          controller: _horizontalScrollController,
-          position: ScrollbarPosition.top,
           child: SingleChildScrollView(
             scrollDirection: Axis.vertical,
             controller: _verticalScrollController,
@@ -137,8 +136,6 @@ class _TreeWidgetState extends State<TreeWidget>
               ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -173,9 +170,7 @@ class _TreeWidgetState extends State<TreeWidget>
               });
             },
             onRemove: () {              
-              setState(() {
-                _tree = _tree?.remove(_tree, key.data);
-              });
+              onRemoveItem(key);
             },
           )
         );
@@ -188,11 +183,19 @@ class _TreeWidgetState extends State<TreeWidget>
     if (node == null) {
       return;
     }
+
+    if (_isStopped) {
+      _nodes.clear();
+      setState(() {});
+      return;
+    }
+
     _nodes.add(node.data);
     setState(() {});
     await Future.delayed(_duration);
     await _preOrderTraverse(node.left);
     await _preOrderTraverse(node.right);
+
   }
 
   Future<void> _postOrderTraverse(BinaryTreeNode? node) async {
@@ -202,15 +205,23 @@ class _TreeWidgetState extends State<TreeWidget>
 
     await _postOrderTraverse(node.left);
     await _postOrderTraverse(node.right);
+
+    if (_isStopped) {
+      _nodes.clear();
+      setState(() {});
+      return;
+    }
+
     _nodes.add(node.data);
     setState(() {});
     await Future.delayed(_duration);
-  }
-    
+  } 
 
   @override
   void onAutoMode() {
-    // TODO: implement onAutoMode
+    setState(() {
+      _stepByStepMode = false;
+    });
   }
 
   @override
@@ -223,40 +234,67 @@ class _TreeWidgetState extends State<TreeWidget>
   @override
   Future<void> onPlay() async {
     _nodes.clear();
-    //_postOrderTraverse(_tree);
-    showDialog(
+    var algVariant = await showDialog<TraverseAlgorithms>(
       context: context, 
-      builder: (_) => TraverseAlgorithmsDialog(
-        onPreOrder: () => _preOrderTraverse(_tree), 
-        onPostOrder: () => _postOrderTraverse(_tree)
-      ));
+      builder: (_) => const TraverseAlgorithmsDialog());
+    if (algVariant == TraverseAlgorithms.preOrder) {
+      await _preOrderTraverse(_tree);
+    } else if (algVariant == TraverseAlgorithms.postOrder) {
+      await _postOrderTraverse(_tree);
+    }
+    _isStopped = false;
   }
 
   @override
-  void onRemoveItem(int index) {
-    // TODO: implement onRemoveItem
+  void onRemoveItem(BinaryTreeNode node) {
+    setState(() {
+      _tree = _tree?.remove(_tree, node.data);
+    });
   }
 
   @override
   void onStepBack() {
-    // TODO: implement onStepBack
+    if (_curTraverseStepIndex > 0) {
+      _nodes.removeLast();
+      _curTraverseStepIndex--;
+      setState(() {});
+    }
   }
 
   @override
-  Future<void> onStepByStepMode() {
-    // TODO: implement onStepByStepMode
-    throw UnimplementedError();
+  Future<void> onStepByStepMode() async {
+    setState(() {
+      _stepByStepMode = true;
+      _curTraverseStepIndex = 0;
+    });
+    Future.delayed(Duration.zero, () async {
+      _duration = const Duration(milliseconds: 0);
+      _traverseSteps.clear();
+      await onPlay();
+      _traverseSteps = _nodes.map((node) => TreeTraverseStep(nodeName: node)).toList();
+      _nodes.clear();
+    });
   }
 
   @override
   void onStepForward() {
-    // TODO: implement onStepForward
+    if (_curTraverseStepIndex < _traverseSteps.length) {
+      _nodes.add(_traverseSteps[_curTraverseStepIndex].nodeName);
+      _curTraverseStepIndex++;
+      setState(() {});
+    }    
   }
 
   @override
   void onStop() {
-    // TODO: implement onStop
+    setState(() {
+      _isStopped = true;
+    });
   }
 }
 
+class TreeTraverseStep {
+  final String nodeName;
 
+  TreeTraverseStep({required this.nodeName});
+}

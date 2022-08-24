@@ -1,10 +1,8 @@
+import 'package:algorithms/features/tree/models/traverse_algorithms.dart';
 import 'package:flutter/material.dart';
 
 class TraverseAlgorithmsDialog extends StatefulWidget {
-  final void Function() onPreOrder;
-  final void Function() onPostOrder;
-
-  const TraverseAlgorithmsDialog({ Key? key, required this.onPreOrder, required this.onPostOrder }) : super(key: key);
+  const TraverseAlgorithmsDialog({ Key? key}) : super(key: key);
 
   @override
   State<TraverseAlgorithmsDialog> createState() => _TraverseAlgorithmsDialogState();
@@ -27,16 +25,14 @@ class _TraverseAlgorithmsDialogState extends State<TraverseAlgorithmsDialog> {
           children: [
             ListTile(
               title: const Text('Pre-order traverse'),
-              onTap: ()  {
-                Navigator.of(context).pop();
-                widget.onPreOrder();
+              onTap: () {
+                Navigator.of(context).pop<TraverseAlgorithms>(TraverseAlgorithms.preOrder);
               },
             ),
             ListTile(
               title: const Text('Post-order traverse'),
               onTap: () {
-                Navigator.of(context).pop();
-                widget.onPostOrder();
+                Navigator.of(context).pop<TraverseAlgorithms>(TraverseAlgorithms.postOrder);
               },
             ),
           ],

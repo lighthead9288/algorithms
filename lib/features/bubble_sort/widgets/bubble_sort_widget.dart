@@ -18,7 +18,7 @@ class BubbleSortWidget extends StatefulWidget {
 
 class _BubbleSortWidgetState extends State<BubbleSortWidget>
     with TickerProviderStateMixin
-    implements AlgorithmOperations {
+    implements AlgorithmOperations<int> {
   late double _deviceHeight;
   late double _deviceWidth;
 

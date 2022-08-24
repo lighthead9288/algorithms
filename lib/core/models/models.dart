@@ -16,12 +16,12 @@ class Swap {
   Swap({required this.arraySourceIndex, required this.arrayDestinationIndex});
 }
 
-abstract class AlgorithmOperations {
+abstract class AlgorithmOperations<T> {
   Future<void> onPlay();
   void onStop();
   void onAutoMode();
   Future<void> onStepByStepMode();
-  void onRemoveItem(int index);
+  void onRemoveItem(T index);
   void onDurationChange(int value);
   void onStepForward();
   void onStepBack();

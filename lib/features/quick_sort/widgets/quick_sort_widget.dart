@@ -15,7 +15,7 @@ class QuickSortWidget extends StatefulWidget {
 }
 
 class _QuickSortWidgetState extends State<QuickSortWidget> with TickerProviderStateMixin
-    implements AlgorithmOperations {
+    implements AlgorithmOperations<int> {
 
   late double _deviceHeight;
   late double _deviceWidth;
