@@ -22,4 +22,17 @@ class BinaryTreeNode {
     return node;
   }
 
+  int getMaxNumber(BinaryTreeNode? node, int max) {
+    if (node == null) {
+      return max;
+    }
+
+    var result = (int.parse(node.data) > max) ? int.parse(node.data) : max;
+
+    result = getMaxNumber(node.left, result);
+    result = getMaxNumber(node.right, result);
+    
+    return result;
+  }
+
 }
